@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "emotion-labeling",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "emotion_labels",
+      "database_id": "c6789830-817d-4b9e-8f67-24b1d1e6952a"
+    }
+  ],
+  // Lets src/index.js import src/admin.html as a string, so the admin page is
+  // served by the Worker (behind auth) rather than as a public static asset.
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": false }],
+  "observability": { "enabled": true }
+}

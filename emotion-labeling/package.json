@@ -1,0 +1,28 @@
+{
+  "name": "cse594-emotion-labeling",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "wrangler dev --port 8787",
+    "db:seed": "wrangler d1 execute emotion_labels --remote --file=./seed.sql",
+    "db:seed:local": "wrangler d1 execute emotion_labels --local --file=./seed.sql",
+    "deploy": "wrangler deploy",
+    "export": "node scripts/export.mjs",
+    "db:migrate": "wrangler d1 migrations apply emotion_labels --remote",
+    "db:migrate:local": "wrangler d1 migrations apply emotion_labels --local"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "private": "true",
+  "devDependencies": {
+    "wrangler": "^4.135.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260918.1": true
+  }
+}

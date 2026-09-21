@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emotion Labeling Task</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #ffffff; --ink: #1b1b1a; --muted: #605f5b;
+    --line: #e1e1dd; --accent: #2b2b2e; --accent-ink: #f8f8f6; --soft: #f6f0e4;
+    --tint: #f3ecdf; --tint-line: #e4d9c4;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --card: #202225; --ink: #ececeb; --muted: #9a9a96;
+      --line: #32343a; --accent: #d8d7d3; --accent-ink: #17181a; --soft: #272420;
+      --tint: #2b2822; --tint-line: #3d382e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 16px 64px; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 660px; margin: 0 auto; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 28px; margin-bottom: 16px;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 1rem; margin: 24px 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  #intro h1 { margin-bottom: 18px; }
+  ul { padding-left: 20px; } li { margin-bottom: 6px; }
+  label.field { display: block; font-weight: 600; margin: 24px 0 6px; }
+  input[type=text] {
+    width: 100%; padding: 11px 13px; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  }
+  input[type=text]:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .hint { color: var(--muted); font-size: 0.86rem; margin-top: 6px; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); padding: 11px 18px;
+  }
+  button.primary {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    font-weight: 600; width: 100%; padding: 13px;
+  }
+  button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .progress { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .bar { flex: 1; height: 6px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); transition: width .25s; }
+  .count { color: var(--muted); font-size: 0.86rem; white-space: nowrap; }
+  .tweet {
+    font-size: 1.22rem; line-height: 1.55; padding: 22px; margin-bottom: 22px;
+    background: var(--soft); border-left: 3px solid var(--tint-line); border-radius: 8px;
+  }
+  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 460px) { .choices { grid-template-columns: 1fr; } }
+  .choices button {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; text-align: left;
+    background: var(--tint); border-color: var(--tint-line);
+  }
+  .opt { display: flex; flex-direction: column; gap: 2px; }
+  .opt .name { font-weight: 600; }
+  .opt .gloss { font-size: 0.775rem; line-height: 1.35; color: var(--muted); }
+  .choices button[aria-pressed="true"] {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  }
+  .choices button[aria-pressed="true"] .gloss { color: var(--accent-ink); opacity: 0.72; }
+  .key {
+    font: 600 0.75rem/1 ui-monospace, monospace; color: var(--muted);
+    border: 1px solid var(--tint-line); border-radius: 4px; padding: 3px 6px;
+  }
+  .choices button[aria-pressed="true"] .key { color: var(--accent-ink); border-color: currentColor; opacity: 0.8; }
+  .err { color: #b3261e; margin-top: 12px; }
+  .topbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+  .topbar a {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 0.84rem; font-weight: 600; color: var(--ink); text-decoration: none;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 15px;
+  }
+  .topbar a:hover { background: var(--tint); border-color: var(--tint-line); }
+  .topbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .topbar svg { opacity: 0.65; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .err { color: #f2b8b5; } }
+  code { background: var(--soft); padding: 2px 6px; border-radius: 4px; font-size: 0.86em; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar" id="topbar">
+    <a href="/admin" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      Admin login
+    </a>
+  </div>
+
+  <!-- ── Screen 1: instructions ─────────────────────────────── -->
+  <section id="intro" class="card">
+    <noscript>
+      <p class="err" style="margin:0 0 18px">This task needs JavaScript. Please enable it and
+      reload the page.</p>
+    </noscript>
+    <h1>Labeling emotion in short messages</h1>
+
+    <p>You'll read <b>5 short messages</b> from a public dataset of social media posts
+    and choose the <b>single emotion the writer is expressing</b>. Takes about two minutes.</p>
+
+    <h2>How to choose</h2>
+    <ul>
+      <li>Label what <b>the writer</b> feels, not how the message makes you feel.</li>
+      <li>Pick the best single fit, even when a message is ambiguous. Go with your instinct.</li>
+      <li>The dataset's authors stripped punctuation, capitalization, and emoji, so the text
+          reads a little flat. Judge it as-is.</li>
+    </ul>
+
+    <label class="field" for="name">Your nickname</label>
+    <input type="text" id="name" maxlength="80" placeholder="how you'd like to be listed"
+           autocomplete="off" spellcheck="false">
+    <p class="hint" style="margin-bottom:22px">Recorded with your labels and the time you spend
+    on each message. Nothing else is collected.</p>
+
+    <button class="primary" id="start">Start &rarr;</button>
+    <p class="err" id="introErr" hidden></p>
+  </section>
+
+  <!-- ── Screen 2: labeling ─────────────────────────────────── -->
+  <section id="task" class="card" hidden>
+    <div class="progress">
+      <div class="bar"><i id="barFill" style="width:0%"></i></div>
+      <span class="count" id="count"></span>
+    </div>
+
+    <p class="hint" style="margin:0 0 8px">Which emotion is the writer expressing?</p>
+    <blockquote class="tweet" id="tweet"></blockquote>
+
+    <div class="choices" id="choices"></div>
+    <p class="hint">Press <code>1</code>-<code>6</code> to choose, <code>Enter</code> to continue.</p>
+
+    <button class="primary" id="next" disabled style="margin-top:8px">Next</button>
+    <p class="err" id="taskErr" hidden></p>
+  </section>
+
+  <!-- ── Screen 3: done ─────────────────────────────────────── -->
+  <section id="done" class="card" hidden>
+    <h1>Thank you.</h1>
+    <p class="sub">Your 5 labels have been recorded. You may close this tab.</p>
+    <p class="hint">Participant ID <code id="pid"></code></p>
+  </section>
+
+</div>
+
+<script>
+// The six categories and their glosses, shown on every labeling screen so
+// nobody has to hold the definitions in memory.
+const CATEGORIES = [
+  ["anger",    "irritation, frustration, rage, resentment"],
+  ["fear",     "anxiety, worry, nervousness, dread"],
+  ["joy",      "happiness, excitement, contentment, satisfaction"],
+  ["love",     "affection, warmth, caring, tenderness"],
+  ["sadness",  "unhappiness, disappointment, grief, loneliness"],
+  ["surprise", "astonishment, amazement, being caught off guard"],
+];
+const LABELS = CATEGORIES.map(([name]) => name);
+
+const el = (id) => document.getElementById(id);
+const show = (id) => {
+  for (const s of ["intro", "task", "done"]) el(s).hidden = s !== id;
+  el("topbar").hidden = id === "task";
+  window.scrollTo(0, 0);
+};
+
+// One person, one id: the id the server hands out is kept in this browser and
+// sent back on the next visit, so a reload does not create a second participant.
+const STORE_ID = "cse594.emotion.participantId";
+const STORE_NAME = "cse594.emotion.nickname";
+const remembered = (key) => {
+  try { return localStorage.getItem(key); } catch { return null; }
+};
+const remember = (key, value) => {
+  try { localStorage.setItem(key, value); } catch { /* private mode, ignore */ }
+};
+
+let participantId = null;
+let tweets = [];
+let index = 0;        // which tweet we're on
+let chosen = null;    // current selection
+let shownAt = 0;      // timestamp the current tweet appeared
+
+/** Build the six choice buttons once. */
+const choicesEl = el("choices");
+CATEGORIES.forEach(([label, gloss], i) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.setAttribute("aria-pressed", "false");
+  b.dataset.label = label;
+  b.innerHTML =
+    `<span class="key">${i + 1}</span>` +
+    `<span class="opt"><span class="name">${label}</span>` +
+    `<span class="gloss">${gloss}</span></span>`;
+  b.addEventListener("click", () => select(label));
+  choicesEl.appendChild(b);
+});
+
+function select(label) {
+  chosen = label;
+  for (const b of choicesEl.children) {
+    b.setAttribute("aria-pressed", String(b.dataset.label === label));
+  }
+  el("next").disabled = false;
+}
+
+function render() {
+  const t = tweets[index];
+  el("tweet").textContent = t.text;
+  el("count").textContent = `${index + 1} of ${tweets.length}`;
+  el("barFill").style.width = `${(index / tweets.length) * 100}%`;
+  el("next").textContent = index === tweets.length - 1 ? "Finish" : "Next";
+  chosen = null;
+  el("next").disabled = true;
+  for (const b of choicesEl.children) b.setAttribute("aria-pressed", "false");
+  shownAt = performance.now();
+}
+
+async function post(path, payload) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+el("name").value = remembered(STORE_NAME) ?? "";
+
+el("start").addEventListener("click", async () => {
+  const btn = el("start");
+  btn.disabled = true;
+  btn.textContent = "Loading…";
+  el("introErr").hidden = true;
+  try {
+    const data = await post("/api/session", {
+      displayName: el("name").value,
+      returningId: remembered(STORE_ID),
+    });
+    participantId = data.participantId;
+    tweets = data.tweets;
+    remember(STORE_ID, participantId);
+    remember(STORE_NAME, el("name").value);
+
+    if (data.completed) {
+      el("pid").textContent = participantId;
+      show("done");
+      return;
+    }
+
+    // Returning mid-task: pick up at the first message they had not answered.
+    index = Math.min(data.answered ?? 0, tweets.length - 1);
+    show("task");
+    render();
+  } catch (err) {
+    el("introErr").textContent = err.message + ". Please try again.";
+    el("introErr").hidden = false;
+    btn.disabled = false;
+    btn.textContent = "Start →";
+  }
+});
+
+el("next").addEventListener("click", async () => {
+  if (!chosen) return;
+  const btn = el("next");
+  btn.disabled = true;
+  el("taskErr").hidden = true;
+  try {
+    await post("/api/label", {
+      participantId,
+      tweetId: tweets[index].id,
+      label: chosen,
+      position: index + 1,
+      dwellMs: performance.now() - shownAt,
+    });
+    if (index === tweets.length - 1) {
+      await post("/api/complete", { participantId });
+      el("pid").textContent = participantId;
+      show("done");
+    } else {
+      index += 1;
+      render();
+    }
+  } catch (err) {
+    el("taskErr").textContent = err.message + ". Your answer was not saved, please try again.";
+    el("taskErr").hidden = false;
+    btn.disabled = false;
+  }
+});
+
+// Keyboard: 1-6 select a label, Enter advances.
+document.addEventListener("keydown", (e) => {
+  if (el("task").hidden) return;
+  if (e.key >= "1" && e.key <= "6") {
+    select(LABELS[Number(e.key) - 1]);
+  } else if (e.key === "Enter" && !el("next").disabled) {
+    el("next").click();
+  }
+});
+</script>
+</body>
+</html>

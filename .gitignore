@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# wrangler / Cloudflare local state (local D1 sqlite files, build cache)
+.wrangler/
+dist/
+
+# local secrets, never commit
+.dev.vars
+.env
+*.local
+
+# exported participant data, regenerate with `npm run export`
+labels.csv
+
+# generated from data/tweets.json by data/build_dataset.py
+seed.sql
+
+# macOS
+.DS_Store
+
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+
+# VS Code workspace settings (machine-specific LaTeX paths)
+.vscode/
+
+# Write-up and its assets: the PDF carries the dashboard password, so the
+# document stays out of this repo and is submitted directly.
+*.tex
+*.pdf
+screenshots/
+
+# Submission bundle built from this tree, not part of it
+*.zip
+cse594-a1/

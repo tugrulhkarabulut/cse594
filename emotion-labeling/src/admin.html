@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collected labels</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #fff; --ink: #1b1b1a; --muted: #605f5b; --line: #e1e1dd;
+    --accent: #2b2b2e; --tint: #f3ecdf; --tint-line: #e4d9c4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --card: #202225; --ink: #ececeb; --muted: #9a9a96; --line: #32343a;
+      --accent: #d8d7d3; --tint: #2b2822; --tint-line: #3d382e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 16px 64px; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  h1 { font-size: 1.4rem; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 0.95rem; margin: 30px 0 10px; }
+  a.dl { margin-left: auto; color: var(--ink); font-size: 0.85rem; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile b { display: block; font-size: 1.5rem; font-weight: 650; letter-spacing: -0.02em; }
+  .tile span { color: var(--muted); font-size: 0.78rem; }
+  .scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.83rem; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: var(--tint); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.02em; }
+  tr:last-child td { border-bottom: 0; }
+  td.text { white-space: normal; min-width: 300px; color: var(--muted); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .miss { color: #b3261e; } .hit { color: var(--muted); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .miss { color: #f2b8b5; } }
+  .cm td.diag { font-weight: 700; background: var(--tint); }
+  .cm td.zero { color: var(--line); }
+  .empty { color: var(--muted); padding: 26px; text-align: center; }
+  .pager {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-top: 12px; color: var(--muted); font-size: 0.82rem;
+  }
+  .pager .btns { margin-left: auto; display: flex; gap: 8px; }
+  .pager button {
+    font: inherit; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 13px;
+  }
+  .pager button:hover:not(:disabled) { background: var(--tint); border-color: var(--tint-line); }
+  .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pager select {
+    font: inherit; font-size: 0.82rem; color: var(--ink); background: var(--card);
+    border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px;
+  }
+  code { background: var(--tint); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Collected labels</h1>
+    <a class="dl" href="/admin/labels.csv">Download CSV &darr;</a>
+  </header>
+  <div id="root"><p class="empty">Loading…</p></div>
+</div>
+
+<script>
+const el = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const fmtTime = (iso) => iso ? new Date(iso).toLocaleString() : "-";
+const fmtSec = (ms) => ms === null || ms === undefined ? "-" : (ms / 1000).toFixed(1) + "s";
+
+fetch("/admin/data")
+  .then((r) => r.json())
+  .then(render)
+  .catch((e) => { document.getElementById("root").innerHTML =
+    '<p class="empty">Could not load data: ' + esc(e.message) + "</p>"; });
+
+function render(d) {
+  const t = d.totals;
+  const pct = t.labels ? Math.round((t.agreed / t.labels) * 100) : 0;
+
+  const tiles = `
+    <div class="tiles">
+      <div class="tile"><b>${t.participants}</b><span>participants</span></div>
+      <div class="tile"><b>${t.completed}</b><span>finished all 5</span></div>
+      <div class="tile"><b>${t.labels}</b><span>labels</span></div>
+      <div class="tile"><b>${pct}%</b><span>agreed with gold</span></div>
+      <div class="tile"><b>${t.tweets}</b><span>tweets in pool</span></div>
+    </div>`;
+
+  const people = d.participants.length ? `
+    <h2>Participants</h2>
+    <div class="scroll"><table>
+      <tr><th>nickname</th><th>id</th><th class="num">labeled</th><th class="num">agreed</th>
+          <th>started</th><th>completed</th></tr>
+      ${d.participants.map((p) => `
+        <tr><td>${esc(p.display_name || "-")}</td>
+            <td><code>${esc(p.id.slice(0, 8))}</code></td>
+            <td class="num">${p.labeled}</td>
+            <td class="num">${p.agreed}/${p.labeled}</td>
+            <td>${fmtTime(p.started_at)}</td>
+            <td>${fmtTime(p.completed_at)}</td></tr>`).join("")}
+    </table></div>` : "";
+
+  // Confusion matrix: rows = gold, columns = what participants chose.
+  const cats = d.categories;
+  const m = {};
+  for (const g of cats) { m[g] = {}; for (const c of cats) m[g][c] = 0; }
+  for (const l of d.labels) m[l.gold_label][l.chosen_label] += 1;
+
+  const matrix = d.labels.length ? `
+    <h2>Gold label (rows) vs. what participants chose (columns)</h2>
+    <div class="scroll"><table class="cm">
+      <tr><th></th>${cats.map((c) => `<th class="num">${c}</th>`).join("")}<th class="num">total</th></tr>
+      ${cats.map((g) => {
+        const total = cats.reduce((s, c) => s + m[g][c], 0);
+        return `<tr><th>${g}</th>${cats.map((c) => {
+          const v = m[g][c];
+          const cls = [g === c ? "diag" : "", v === 0 ? "zero" : ""].filter(Boolean).join(" ");
+          return `<td class="num ${cls}">${v}</td>`;
+        }).join("")}<td class="num">${total}</td></tr>`;
+      }).join("")}
+    </table></div>` : "";
+
+  const labelsSection = d.labels.length ? `
+    <h2>Every label</h2>
+    <div class="scroll"><table id="labelTable"></table></div>
+    <div class="pager">
+      <span>Rows per page</span>
+      <select id="pageSize">
+        <option>25</option><option>50</option><option>100</option><option value="0">All</option>
+      </select>
+      <span id="pageInfo"></span>
+      <span class="btns">
+        <button type="button" id="prevPage">Previous</button>
+        <button type="button" id="nextPage">Next</button>
+      </span>
+    </div>`
+    : '<p class="empty">No labels collected yet.</p>';
+
+  document.getElementById("root").innerHTML = tiles + people + matrix + labelsSection;
+  if (d.labels.length) setupPager(d.labels);
+}
+
+const HEAD = `<tr><th>nickname</th><th class="num">#</th><th class="num">tweet</th><th>text</th>
+  <th>chose</th><th>gold</th><th class="num">time</th><th>when</th></tr>`;
+
+const rowHtml = (l) => `
+  <tr><td>${esc(l.display_name || "-")}</td>
+      <td class="num">${l.position}</td>
+      <td class="num">${l.tweet_id}</td>
+      <td class="text">${esc(l.text)}</td>
+      <td class="${l.is_correct ? "hit" : "miss"}">${esc(l.chosen_label)}</td>
+      <td class="hit">${esc(l.gold_label)}</td>
+      <td class="num">${fmtSec(l.dwell_ms)}</td>
+      <td>${fmtTime(l.created_at)}</td></tr>`;
+
+/** Client-side paging: the whole set is already in memory, so no extra requests. */
+function setupPager(labels) {
+  const table = el("labelTable"), info = el("pageInfo");
+  const prev = el("prevPage"), next = el("nextPage"), sizeSel = el("pageSize");
+  let page = 0;
+
+  const size = () => Number(sizeSel.value) || labels.length;
+  const pageCount = () => Math.max(1, Math.ceil(labels.length / size()));
+
+  function draw() {
+    page = Math.min(page, pageCount() - 1);
+    const start = page * size();
+    const slice = labels.slice(start, start + size());
+    table.innerHTML = HEAD + slice.map(rowHtml).join("");
+    info.textContent = `${start + 1}-${start + slice.length} of ${labels.length}` +
+      (pageCount() > 1 ? `  (page ${page + 1} of ${pageCount()})` : "");
+    prev.disabled = page === 0;
+    next.disabled = page >= pageCount() - 1;
+  }
+
+  prev.addEventListener("click", () => { if (page > 0) { page -= 1; draw(); } });
+  next.addEventListener("click", () => { if (page < pageCount() - 1) { page += 1; draw(); } });
+  sizeSel.addEventListener("change", () => { page = 0; draw(); });
+  draw();
+}
+</script>
+</body>
+</html>
